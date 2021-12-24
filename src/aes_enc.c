@@ -31,9 +31,11 @@ uint8_t iv[16] = { 0 };             //iv is the initialization vector.
 uint8_t counter[16] = { 0 };        //counter counts so that it can produce the ctr_vec
 uint8_t ctr_vec[16] = { 0 };        //ctr_vec = iv ^ counter
 */
+
+
 char* inputfilename;
 char* outputfilename;
-uint8_t aestype[1];
+uint8_t aesFileHeader[2] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
 
 
 char default_extension[] = ".aes";
@@ -96,21 +98,21 @@ int main(int argc, char** argv)
             {
                 case '1':
                     printf("AES Type: AES-128\n");
-                    *aestype = 1;
+                    *aesFileHeader = 1;
                     nRoundKeys = 11;
                     nWords = 4;
                     nRounds = 10;
                     break;
                 case '2':
                     printf("AES Type: AES-192\n");
-                    *aestype = 2;
+                    *aesFileHeader = 2;
                     nRoundKeys = 13;
                     nWords = 6;
                     nRounds = 12;
                     break;
                 case '3':
                     printf("AES Type: AES-256\n");
-                    *aestype = 3;
+                    *aesFileHeader = 3;
                     nRoundKeys = 15;
                     nWords = 8;
                     nRounds = 14;
@@ -170,9 +172,10 @@ int main(int argc, char** argv)
         case 'h':
             help();
             return 0;
-        //"Secure-ish"... This prevents brute forcing.
+        //"Secure-ish"... This can be used to prevent brute forcing.
         case 's':
             optS = true;
+            *(aesFileHeader + 1) = 1;
             break;
         case ':':
             printf("[ERROR] Option argument not specified.\n");
@@ -211,11 +214,10 @@ int main(int argc, char** argv)
         printf("[INFO] Since the selected AES type requires %d bytes as the key, and the provided key file supplied %d bytes, %d bytes are padded with zeros.\n", keylen, read_bytes, keylen - read_bytes);
     }
     
-    free(inputfilename);
-    free(outputfilename);
+    
 
     //AES type header
-    fwrite(aestype, 1, 1, outputfile);
+    fwrite(aesFileHeader, 1, 2, outputfile);
 
     //Write IV
     fwrite(ctr_vec, 1, 16, outputfile);
@@ -260,26 +262,12 @@ int main(int argc, char** argv)
 
     
 
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
     fclose(inputfile);
     fclose(outputfile);
 
+    printf("\n[INFO] Encryption complete! Saved as: %s\n", outputfilename);
 
+    free(inputfilename);
+    free(outputfilename);
     return 0;
 }
