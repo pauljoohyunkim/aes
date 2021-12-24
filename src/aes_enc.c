@@ -27,7 +27,9 @@ int keylen = 0;                 //Length of key (16 for AES128, 24 for AES192, 3
 /*
 From ctr_common.h header
 
-
+uint8_t iv[16] = { 0 };             //iv is the initialization vector.
+uint8_t counter[16] = { 0 };        //counter counts so that it can produce the ctr_vec
+uint8_t ctr_vec[16] = { 0 };        //ctr_vec = iv ^ counter
 */
 char* inputfilename;
 char* outputfilename;
@@ -70,7 +72,8 @@ int main(int argc, char** argv)
     }
     //IV generation
     srand(time(NULL));
-    
+    iv_gen()
+
 
 
     // Files
