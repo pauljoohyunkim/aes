@@ -70,39 +70,39 @@ uint8_t table_3[256] = {0x00,0x03,0x06,0x05,0x0c,0x0f,0x0a,0x09,0x18,0x1b,0x1e,0
 //  FUNCTIONS
 
 //Declaration of functions
-void aes();
+void aes(uint8_t* buffer);
 void key_schedule();
 void addWord(uint8_t* destWord, uint8_t* wordA, uint8_t* wordB);
 void subWord(uint8_t* destWord, uint8_t* inWord);
 void subRotWord(uint8_t* destWord, uint8_t* inWord);
-void addRoundKey(uint8_t* key);
-void subBytes();
-void permutation();
-void mult();
+void addRoundKey(uint8_t* buffer, uint8_t* key);
+void subBytes(uint8_t* buffer);
+void permutation(uint8_t* buffer);
+void mult(uint8_t* buffer);
 
 
 
-void aes()
+void aes(uint8_t* buffer)
 {
     key_schedule();
     //Add round key
-    addRoundKey(expanded_key);
+    addRoundKey(buffer, expanded_key);
     //SubBytes step
     for(int i = 1; i < nRounds; i++)
     {
-        subBytes();
+        subBytes(buffer);
         //Permutation step
-        permutation();
+        permutation(buffer);
         //Multiplication step
-        mult();
+        mult(buffer);
         //Adding round key
-        addRoundKey(expanded_key + 16 * i);
+        addRoundKey(buffer, expanded_key + 16 * i);
     }
 
     //Last round does not require mult step.
-    subBytes();
-    permutation();
-    addRoundKey(expanded_key + 16 * nRounds);
+    subBytes(buffer);
+    permutation(buffer);
+    addRoundKey(buffer, expanded_key + 16 * nRounds);
 }
 
 //Generates expanded key
@@ -184,7 +184,7 @@ void subRotWord(uint8_t* destWord, uint8_t* inWord)
 }
 
 // Adding 16 bit of the key
-void addRoundKey(uint8_t* key)
+void addRoundKey(uint8_t* buffer ,uint8_t* key)
 {
     for(int i = 0; i < 16; i++)
     {
@@ -193,7 +193,7 @@ void addRoundKey(uint8_t* key)
 }
 
 //https://en.wikipedia.org/wiki/Advanced_Encryption_Standard#The_SubBytes_step
-void subBytes()
+void subBytes(uint8_t* buffer)
 {
     for(int i = 0; i < 16; i++)
     {
@@ -202,7 +202,7 @@ void subBytes()
 }
 
 // This is known as ShiftRows step on https://en.wikipedia.org/wiki/Advanced_Encryption_Standard
-void permutation()
+void permutation(uint8_t* buffer)
 {
     //Second row
     uint8_t temp[4];
@@ -236,7 +236,7 @@ void permutation()
     buffer[15] = temp[2];
 }
 
-void mult()
+void mult(uint8_t* buffer)
 {
     //Copy buffer to temp buffer
     uint8_t temp[16];

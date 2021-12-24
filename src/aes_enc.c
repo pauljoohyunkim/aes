@@ -33,6 +33,7 @@ uint8_t ctr_vec[16] = { 0 };        //ctr_vec = iv ^ counter
 */
 char* inputfilename;
 char* outputfilename;
+uint8_t aestype[1];
 
 
 char default_extension[] = ".aes";
@@ -72,14 +73,14 @@ int main(int argc, char** argv)
     }
     //IV generation
     srand(time(NULL));
-    iv_gen()
+    iv_gen();
 
 
 
     // Files
     FILE* inputfile;
     FILE* keyfile;
-    int read_bytes;         //Bytes of keyfile read.
+    int read_bytes;         //Bytes of file read.
     FILE* outputfile;
 
     // Option handling.
@@ -95,18 +96,21 @@ int main(int argc, char** argv)
             {
                 case '1':
                     printf("AES Type: AES-128\n");
+                    *aestype = 1;
                     nRoundKeys = 11;
                     nWords = 4;
                     nRounds = 10;
                     break;
                 case '2':
                     printf("AES Type: AES-192\n");
+                    *aestype = 2;
                     nRoundKeys = 13;
                     nWords = 6;
                     nRounds = 12;
                     break;
                 case '3':
                     printf("AES Type: AES-256\n");
+                    *aestype = 3;
                     nRoundKeys = 15;
                     nWords = 8;
                     nRounds = 14;
@@ -210,8 +214,55 @@ int main(int argc, char** argv)
     free(inputfilename);
     free(outputfilename);
 
+    //AES type header
+    fwrite(aestype, 1, 1, outputfile);
 
-    fread(buffer,1, 16,inputfile);
+    //Write IV
+    fwrite(ctr_vec, 1, 16, outputfile);
+
+    //After reading 16 bytes...
+    read_bytes = fread(buffer, 1, 16,inputfile);
+    while(read_bytes == 16)
+    {
+        aes(ctr_vec);           //AES on ctr_vec
+
+        //XOR-ing with the buffer
+        for(int i = 0; i < 16; i++)
+        {
+            buffer[i] = buffer[i] ^ ctr_vec[i];
+        }
+
+        //Write 16 bytes
+        fwrite(buffer, 1, 16,outputfile);
+        
+        counter_inc();
+        for(int index = 0; index < 16; index++)
+        {
+            ctr_vec[index] = iv[index] ^ counter[index];
+        }
+        read_bytes = fread(buffer, 1, 16,inputfile);
+    }
+
+    //Potential last block
+    if(read_bytes != 0)
+    {
+        aes(ctr_vec);
+
+        //XOR-ing with the buffer
+        for(int i = 0; i < 16; i++)
+        {
+            buffer[i] = buffer[i] ^ ctr_vec[i];
+        }
+
+        //Write the number of bytes required
+        fwrite(buffer, 1, read_bytes,outputfile);
+    }
+
+    
+
+
+
+    
 
     
 

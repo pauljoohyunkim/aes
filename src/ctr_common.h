@@ -13,7 +13,7 @@ void iv_gen()
     for(int i = 0; i < 16; i++)
     {
         iv[i] = rand() % 256;
-        ctr_vec[i] = iv[i] ^ 0;
+        ctr_vec[i] = iv[i];
     }
 }
 
@@ -24,13 +24,11 @@ void counter_inc()
         if(counter[index] != 255)
         {
             counter[index]++;
-            ctr_vec[index] = iv[index] ^ counter[index];
             break;
         }
         else
         {
             counter[index] = 0;
-            ctr_vec[index] = iv[index] ^ 0;
         }
     }
 }
