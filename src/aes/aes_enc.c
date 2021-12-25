@@ -10,6 +10,7 @@
 #include "aes_common.h"
 #include "ctr_common.h"
 #include "file_common.h"
+#include "../hash/sha2.h"
 
 /*
 From aes_common.h header
@@ -39,7 +40,8 @@ void* aes_process(void* ptr);
 
 char* inputfilename;
 char* outputfilename;
-uint8_t aesFileHeader[2] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
+uint8_t aesFileHeader[3] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
+                                    //Third byte represents file-integrity-check skip flag.
 unsigned long long int inputfilesize = 0;       //Size of the input file in bytes
 
 
@@ -47,10 +49,14 @@ char default_extension[] = ".aes";
 
 //File descriptors
 FILE* inputfile;
+FILE* keyfile;
 FILE* outputfile;
 
+uint8_t salted_pass_hash[32] = {0};
+uint8_t integrity_hash[32] = {0};
+
 //Option Flags
-bool optT = false, optI = false, optK = false, optO = false, optS = false;
+bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false;
 
 //Job done flag
 bool done = false;
@@ -90,7 +96,8 @@ void help()
         "\n"
         "       -o <output file>: specify the output file. (default: <input file>.aes)\n"
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
-        "       -s: disable password check when decrypting.\n";
+        "       -s: disable password check when decrypting.\n"
+        "       -f: disable file integrity check after decrypting.\n";
     printf("%s",helptext);
 }
 
@@ -108,13 +115,13 @@ int main(int argc, char** argv)
     iv_gen();
 
     // Files
-    FILE* keyfile;
+    
     int read_bytes;         //Bytes of file read.
     
 
     // Option handling.
     int opt;
-    while((opt = getopt(argc, argv, ":t:i:k:o:hs")) != -1)
+    while((opt = getopt(argc, argv, ":t:i:k:o:hsf")) != -1)
     {
         switch (opt)
         {
@@ -185,7 +192,7 @@ int main(int argc, char** argv)
             {
                 printf("Key File: %s\n", optarg);
                 read_bytes = fread(key, 1, 32, keyfile);
-                fclose(keyfile);
+                //Key file will be closed after salting and hashing.
                 break;
             }
             break;
@@ -205,6 +212,11 @@ int main(int argc, char** argv)
         case 's':
             optS = true;
             *(aesFileHeader + 1) = 1;
+            break;
+        //File-integrity check skip. If you want to save a few seconds...
+        case 'f':
+            optF = true;
+            *(aesFileHeader + 2) = 1;
             break;
         case ':':
             printf("[ERROR] Option argument not specified.\n");
@@ -244,12 +256,33 @@ int main(int argc, char** argv)
     }
 
     //AES type header
-    fwrite(aesFileHeader, 1, 2, outputfile);
+    fwrite(aesFileHeader, 1, 3, outputfile);
 
     //Write IV
     fwrite(ctr_vec, 1, 16, outputfile);
 
 
+    //If -s option is not used, add salt.
+    if(!optS)
+    {
+        //Salting and hashing
+        sha256(ctr_vec,16,keyfile,keylen,salted_pass_hash);
+        fwrite(salted_pass_hash,1,32,outputfile);
+        printf("[INFO] Keyfile hash (with IV as salt) added to the output.\n");
+    }
+
+    //If -f option is not used, add file-integrity checking hash, salted with password
+    if(!optF)
+    {
+        //Salting and hashing
+        printf("[INFO] Hashing input file...\n");
+        sha256(key,keylen,inputfile,inputfilesize,integrity_hash);
+        fwrite(integrity_hash,1,32,outputfile);
+        printf("[INFO] Input file hashed.\n");
+    }
+
+    //Closing key file.
+    fclose(keyfile);
 
     //Threads for status update.
     #ifdef __linux__
