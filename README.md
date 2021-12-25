@@ -41,4 +41,5 @@ Note that you can use any file as a key file, whether it is a text file, image f
 
 Example)
 > aes_enc -t1 -i secret_file.txt -k super_secret_key
+
 Encrypts using AES128-CTR the file "secret_file.txt" using "super_secret_key" file as key file.
