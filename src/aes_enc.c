@@ -7,9 +7,9 @@
 #include <time.h>
 
 
-
 #include "aes_common.h"
 #include "ctr_common.h"
+#include "file_common.h"
 
 /*
 From aes_common.h header
@@ -32,16 +32,46 @@ uint8_t counter[16] = { 0 };        //counter counts so that it can produce the 
 uint8_t ctr_vec[16] = { 0 };        //ctr_vec = iv ^ counter
 */
 
+void* aes_process(void* ptr);
+
+
+
 
 char* inputfilename;
 char* outputfilename;
 uint8_t aesFileHeader[2] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
+unsigned long long int inputfilesize = 0;       //Size of the input file in bytes
 
 
 char default_extension[] = ".aes";
 
+//File descriptors
+FILE* inputfile;
+FILE* outputfile;
+
 //Option Flags
 bool optT = false, optI = false, optK = false, optO = false, optS = false;
+
+//Job done flag
+bool done = false;
+
+#ifdef __linux
+unsigned long long int processedbytes = 0;
+#endif
+
+// For status update while processing. (Linux exclusive feature)
+#ifdef __linux__
+#include <pthread.h>
+
+void* status(void *ptr)
+{
+    while(done == false)
+    {
+        printf("[INFO] %llu/%llu bytes processed.\n",processedbytes,inputfilesize);
+        sleep(5);
+    }
+}
+#endif
 
 //Displaying help
 void help()
@@ -77,13 +107,10 @@ int main(int argc, char** argv)
     srand(time(NULL));
     iv_gen();
 
-
-
     // Files
-    FILE* inputfile;
     FILE* keyfile;
     int read_bytes;         //Bytes of file read.
-    FILE* outputfile;
+    
 
     // Option handling.
     int opt;
@@ -139,6 +166,8 @@ int main(int argc, char** argv)
                 //Copying input file name to the memory.
                 inputfilename = (char*) malloc((strlen(optarg) + 10) * sizeof(char));
                 strcpy(inputfilename,optarg);
+                inputfilesize = filesize(inputfile);
+                printf("Input file \"%s\": %llu bytes\n", inputfilename, inputfilesize);
                 break;
             }
             break;
@@ -213,8 +242,6 @@ int main(int argc, char** argv)
     {
         printf("[INFO] Since the selected AES type requires %d bytes as the key, and the provided key file supplied %d bytes, %d bytes are padded with zeros.\n", keylen, read_bytes, keylen - read_bytes);
     }
-    
-    
 
     //AES type header
     fwrite(aesFileHeader, 1, 2, outputfile);
@@ -222,8 +249,39 @@ int main(int argc, char** argv)
     //Write IV
     fwrite(ctr_vec, 1, 16, outputfile);
 
+
+
+    //Threads for status update.
+    #ifdef __linux__
+    pthread_t status_thread, aes_thread;
+    int* t1,t2;
+    pthread_create(&status_thread, NULL, status, (void*) t1);
+    pthread_create(&aes_thread, NULL, aes_process, (void*) t2);
+    pthread_join(status_thread, NULL);
+    pthread_join(aes_thread, NULL);
+    //If not linux, just use a normal function call without thread support.
+    #else
+    int* t;
+    aes_process((void*) t);
+    #endif
+
+
+
+    fclose(inputfile);
+    fclose(outputfile);
+
+    printf("\n[INFO] Encryption complete! Saved as: %s\n", outputfilename);
+
+    free(inputfilename);
+    free(outputfilename);
+    return 0;
+}
+
+
+void* aes_process(void* ptr)
+{
     //After reading 16 bytes...
-    read_bytes = fread(buffer, 1, 16,inputfile);
+    int read_bytes = fread(buffer, 1, 16,inputfile);
     while(read_bytes == 16)
     {
         aes(ctr_vec);           //AES on ctr_vec
@@ -236,6 +294,10 @@ int main(int argc, char** argv)
 
         //Write 16 bytes
         fwrite(buffer, 1, 16,outputfile);
+
+        #ifdef __linux__
+        processedbytes += 16;
+        #endif
         
         counter_inc();
         for(int index = 0; index < 16; index++)
@@ -258,16 +320,13 @@ int main(int argc, char** argv)
 
         //Write the number of bytes required
         fwrite(buffer, 1, read_bytes,outputfile);
+
+        #ifdef __linux__
+        processedbytes += read_bytes;
+        #endif
     }
 
-    
+    // Job done flag = true
+    done = true;
 
-    fclose(inputfile);
-    fclose(outputfile);
-
-    printf("\n[INFO] Encryption complete! Saved as: %s\n", outputfilename);
-
-    free(inputfilename);
-    free(outputfilename);
-    return 0;
 }
