@@ -40,4 +40,5 @@ Usage: aes_enc -t <AES type> -i <input file> -k <key file> [other options]
 Note that you can use any file as a key file, whether it is a text file, image file, etc, as long as you keep it secret.
 
 Example)
-- aes_enc -t1 -i secret_file.txt -k super_secret_key        Encrypts using AES128-CTR the file "secret_file.txt" using "super_secret_key" file as key file.
+        - aes_enc -t1 -i secret_file.txt -k super_secret_key
+Encrypts using AES128-CTR the file "secret_file.txt" using "super_secret_key" file as key file.
