@@ -56,13 +56,14 @@ uint8_t salted_pass_hash[32] = {0};
 uint8_t integrity_hash[32] = {0};
 
 //Option Flags
-bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false;
+bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false, optU = false;
 
 //Job done flag
 bool done = false;
 
 #ifdef __linux
 unsigned long long int processedbytes = 0;
+long updateFrequency = 0;
 #endif
 
 // For status update while processing. (Linux exclusive feature)
@@ -71,6 +72,10 @@ unsigned long long int processedbytes = 0;
 
 void* status(void *ptr)
 {
+    if(!optU)
+    {
+        updateFrequency = 5;
+    }
     while(done == false)
     {
         printf("[INFO] %llu/%llu bytes processed.\n",processedbytes,inputfilesize);
@@ -96,6 +101,9 @@ void help()
         "\n"
         "       -o <output file>: specify the output file. (default: <input file>.aes)\n"
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
+        #ifdef __linux__
+        "       -u <positive integer>: status update frequency. (default: 5)\n"
+        #endif
         "       -s: disable password check when decrypting.\n"
         "       -f: disable file integrity check after decrypting.\n";
     printf("%s",helptext);
@@ -121,7 +129,11 @@ int main(int argc, char** argv)
 
     // Option handling.
     int opt;
+    #ifdef __linux__
+    while((opt = getopt(argc, argv, ":t:i:k:o:u:hsf")) != -1)
+    #else
     while((opt = getopt(argc, argv, ":t:i:k:o:hsf")) != -1)
+    #endif
     {
         switch (opt)
         {
@@ -218,12 +230,30 @@ int main(int argc, char** argv)
             optF = true;
             *(aesFileHeader + 2) = 1;
             break;
+        
+        #ifdef __linux__
+        case 'u':
+            optU = true;
+            char* updateptr;
+            updateFrequency = strtol(optarg,&updateptr,10);
+            if (*updateptr)
+            {
+                printf("[ERROR] Unrecognized part: \"%s\"\n", updateptr);
+                return 1;
+            }
+            if (updateFrequency <= 0)
+            {
+                printf("[ERROR] Update frequency cannot be negative. Please input a positive integer.\n");
+                return 1;
+            }
+            printf("[INFO] Status update every %ld seconds.\n",updateFrequency);
+        #endif
         case ':':
             printf("[ERROR] Option argument not specified.\n");
-            return 1;
+            //return 1;
         case '?':
             printf("[ERROR] Unknown option \"%c\" specified. Try option \"h\" for help.\n", optopt);
-            return 1;
+            //return 1;
         }
     }
     //Required options ("t", "i", "k") check
