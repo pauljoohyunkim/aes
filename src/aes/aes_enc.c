@@ -60,7 +60,7 @@ bool optT = false, optI = false, optK = false, optO = false, optS = false, optF 
 //Job done flag
 bool done = false;
 
-#ifdef __linux
+#ifdef __linux__
 unsigned long long int processedbytes = 0;
 long updateFrequency = 0;
 #endif
