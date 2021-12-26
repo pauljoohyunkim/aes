@@ -37,7 +37,6 @@ void* aes_process(void* ptr);
 
 
 
-
 char* inputfilename;
 char* outputfilename;
 uint8_t aesFileHeader[3] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
@@ -172,7 +171,7 @@ int main(int argc, char** argv)
         //INPUT FILE
         case 'i':
             optI = true;
-            inputfile = fopen(optarg,"r");
+            inputfile = fopen(optarg,"rb");
             if(inputfile == NULL)
             {
                 printf("[ERROR] Input file could not be opened.\n");
