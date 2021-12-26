@@ -60,13 +60,13 @@ bool optT = false, optI = false, optK = false, optO = false, optS = false, optF 
 //Job done flag
 bool done = false;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 unsigned long long int processedbytes = 0;
 long updateFrequency = 0;
 #endif
 
 // For status update while processing. (Linux exclusive feature)
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <pthread.h>
 
 void* status(void *ptr)
@@ -100,7 +100,7 @@ void help()
         "\n"
         "       -o <output file>: specify the output file. (default: <input file>.aes)\n"
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
-        #ifdef __linux__
+        #if defined(__linux__) || defined(__APPLE__)
         "       -u <positive integer>: status update frequency. (default: 5)\n"
         #endif
         "       -s: disable password check when decrypting.\n"
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
     // Option handling.
     int opt;
-    #ifdef __linux__
+    #if defined(__linux__) || defined(__APPLE__)
     while((opt = getopt(argc, argv, ":t:i:k:o:u:hsf")) != -1)
     #else
     while((opt = getopt(argc, argv, ":t:i:k:o:hsf")) != -1)
@@ -230,7 +230,7 @@ int main(int argc, char** argv)
             *(aesFileHeader + 2) = 1;
             break;
         
-        #ifdef __linux__
+        #if defined(__linux__) || defined(__APPLE__)
         case 'u':
             optU = true;
             char* updateptr;
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
     fclose(keyfile);
 
     //Threads for status update.
-    #ifdef __linux__
+    #if defined(__linux__) || defined(__APPLE__)
     pthread_t status_thread, aes_thread;
     int* t1,t2;
     pthread_create(&status_thread, NULL, status, (void*) t1);
@@ -359,7 +359,7 @@ void* aes_process(void* ptr)
         //Write 16 bytes
         fwrite(buffer, 1, 16,outputfile);
 
-        #ifdef __linux__
+        #if defined(__linux__) || defined(__APPLE__)
         processedbytes += 16;
         #endif
         
@@ -385,7 +385,7 @@ void* aes_process(void* ptr)
         //Write the number of bytes required
         fwrite(buffer, 1, read_bytes,outputfile);
 
-        #ifdef __linux__
+        #if defined(__linux__) || defined(__APPLE__)
         processedbytes += read_bytes;
         #endif
     }
