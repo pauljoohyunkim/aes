@@ -246,13 +246,15 @@ int main(int argc, char** argv)
                 return 1;
             }
             printf("[INFO] Status update every %ld seconds.\n",updateFrequency);
+            break;
         #endif
+
         case ':':
             printf("[ERROR] Option argument not specified.\n");
-            //return 1;
+            return 1;
         case '?':
             printf("[ERROR] Unknown option \"%c\" specified. Try option \"h\" for help.\n", optopt);
-            //return 1;
+            return 1;
         }
     }
     //Required options ("t", "i", "k") check

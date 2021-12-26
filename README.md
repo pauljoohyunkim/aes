@@ -14,10 +14,10 @@ Suppose "inputfile" contains some bytes "$$$$$$$$$$$$$$$$" and its cipher text i
 where
 * A represents the format of the AES used. ("\x01" for AES-128, "\x02" for AES-192, and "\x03" for AES-256)
 * P represents the flag for not allowing password checks. ("\x01" for skipping password checks.)
-* F represents the flag for not allowing
+* F represents the flag for not allowing file integrity check after decryption.
 * [16d] represents the 16 byte IV (initialization vector).
 * [32p] represents the 32 byte SHA256 hash of the password file with IV as salt. (This will be missing if P is set to 1.)
-* [32f] represents the 32 byte SHA256 hash of the file with the password as salt.
+* [32f] represents the 32 byte SHA256 hash of the file with the password as salt. (This will be missing if F is set to 1.)
 * Salting is done by XOR-ing the salt with the file in the first "salt-len" bytes.
 
 ## Option (-h)
