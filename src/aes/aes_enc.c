@@ -60,25 +60,21 @@ bool optT = false, optI = false, optK = false, optO = false, optS = false, optF 
 //Job done flag
 bool done = false;
 
-#if defined(__linux__) || defined(__APPLE__)
+#if __has_include(<pthread.h>)
 unsigned long long int processedbytes = 0;
-long updateFrequency = 0;
+long updateFrequency = 5;
 #endif
 
-// For status update while processing. (Linux exclusive feature)
-#if defined(__linux__) || defined(__APPLE__)
+// For status update while processing. (<pthread.h>-existing environment exclusive feature)
+#if __has_include(<pthread.h>)
 #include <pthread.h>
 
 void* status(void *ptr)
 {
-    if(!optU)
-    {
-        updateFrequency = 5;
-    }
     while(done == false)
     {
         printf("[INFO] %llu/%llu bytes processed.\n",processedbytes,inputfilesize);
-        sleep(5);
+        sleep(updateFrequency);
     }
 }
 #endif
@@ -100,7 +96,7 @@ void help()
         "\n"
         "       -o <output file>: specify the output file. (default: <input file>.aes)\n"
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
-        #if defined(__linux__) || defined(__APPLE__)
+        #if __has_include(<pthread.h>)
         "       -u <positive integer>: status update frequency. (default: 5)\n"
         #endif
         "       -s: disable password check when decrypting.\n"
@@ -128,7 +124,7 @@ int main(int argc, char** argv)
 
     // Option handling.
     int opt;
-    #if defined(__linux__) || defined(__APPLE__)
+    #if __has_include(<pthread.h>)
     while((opt = getopt(argc, argv, ":t:i:k:o:u:hsf")) != -1)
     #else
     while((opt = getopt(argc, argv, ":t:i:k:o:hsf")) != -1)
@@ -230,7 +226,7 @@ int main(int argc, char** argv)
             *(aesFileHeader + 2) = 1;
             break;
         
-        #if defined(__linux__) || defined(__APPLE__)
+        #if __has_include(<pthread.h>)
         case 'u':
             optU = true;
             char* updateptr;
@@ -316,7 +312,7 @@ int main(int argc, char** argv)
     fclose(keyfile);
 
     //Threads for status update.
-    #if defined(__linux__) || defined(__APPLE__)
+    #if __has_include(<pthread.h>)
     pthread_t status_thread, aes_thread;
     int* t1,t2;
     pthread_create(&status_thread, NULL, status, (void*) t1);
@@ -359,7 +355,7 @@ void* aes_process(void* ptr)
         //Write 16 bytes
         fwrite(buffer, 1, 16,outputfile);
 
-        #if defined(__linux__) || defined(__APPLE__)
+        #if __has_include(<pthread.h>)
         processedbytes += 16;
         #endif
         
@@ -385,7 +381,7 @@ void* aes_process(void* ptr)
         //Write the number of bytes required
         fwrite(buffer, 1, read_bytes,outputfile);
 
-        #if defined(__linux__) || defined(__APPLE__)
+        #if __has_include(<pthread.h>)
         processedbytes += read_bytes;
         #endif
     }
