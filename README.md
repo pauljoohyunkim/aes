@@ -54,6 +54,7 @@ Usage: aes_enc -t <AES type> -i <input file> -k <key file> [other options]
 >       -o <output file>: specify the output file. (default: <input file>.aes)
 >       (Warning: Do not set the output file to be equal to the input file.)
 >       -u <positive integer>: status update frequency. (default: 5)     [ORIGINALLY UNIX-BASED ENVIORNMENT EXCLUSIVE]
+>	-q: disable status update during encryption.			 [ORIGINALLY UNIX-BASED ENVIRONMENT EXCLUSIVE]
 >       -s: disable password check when decrypting.
 >       -f: disable file integrity check after decrypting.
 
