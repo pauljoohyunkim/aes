@@ -55,7 +55,7 @@ uint8_t salted_pass_hash[32] = {0};
 uint8_t integrity_hash[32] = {0};
 
 //Option Flags
-bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false, optU = false;
+bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false, optU = false, optQ = false;
 
 //Job done flag
 bool done = false;
@@ -98,6 +98,7 @@ void help()
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
         #if __has_include(<pthread.h>)
         "       -u <positive integer>: status update frequency. (default: 5)\n"
+        "       -q: disable status update during encryption.\n"
         #endif
         "       -s: disable password check when decrypting.\n"
         "       -f: disable file integrity check after decrypting.\n";
@@ -125,7 +126,7 @@ int main(int argc, char** argv)
     // Option handling.
     int opt;
     #if __has_include(<pthread.h>)
-    while((opt = getopt(argc, argv, ":t:i:k:o:u:hsf")) != -1)
+    while((opt = getopt(argc, argv, ":t:i:k:o:u:hsfq")) != -1)
     #else
     while((opt = getopt(argc, argv, ":t:i:k:o:hsf")) != -1)
     #endif
@@ -243,6 +244,10 @@ int main(int argc, char** argv)
             }
             printf("[INFO] Status update every %ld seconds.\n",updateFrequency);
             break;
+        case 'q':
+            optQ = true;
+            printf("[INFO] Status update during AES encryption disabled.\n");
+            break;
         #endif
 
         case ':':
@@ -313,13 +318,21 @@ int main(int argc, char** argv)
 
     //Threads for status update.
     #if __has_include(<pthread.h>)
-    pthread_t status_thread, aes_thread;
-    int* t1,t2;
-    pthread_create(&status_thread, NULL, status, (void*) t1);
-    pthread_create(&aes_thread, NULL, aes_process, (void*) t2);
-    pthread_join(status_thread, NULL);
-    pthread_join(aes_thread, NULL);
-    //If not linux, just use a normal function call without thread support.
+    if(optQ)
+    {
+        int* t;
+        aes_process((void*) t);
+    }
+    else
+    {
+        pthread_t status_thread, aes_thread;
+        int* t1,t2;
+        pthread_create(&status_thread, NULL, status, (void*) t1);
+        pthread_create(&aes_thread, NULL, aes_process, (void*) t2);
+        pthread_join(status_thread, NULL);
+        pthread_join(aes_thread, NULL);
+    }
+    //If pthread.h is not supported, just use a normal function call without thread support.
     #else
     int* t;
     aes_process((void*) t);
