@@ -40,7 +40,7 @@ To build on other systems, navigate to the src/aes directory, and build using
 If for some reason the compilation fails due to the -pthread option, try again with -lpthread flag instead.
 
 ## aes_enc Option (-h)
-Usage: aes_enc -t <AES type> -i <input file> -k <key file> [other options]
+Usage: aes_enc -t (AES type) -i (input file) -k (key file) [other options]
 
 
 > Required options:
