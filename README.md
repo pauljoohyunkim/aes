@@ -24,9 +24,13 @@ where
 To build on a Unix environment that supports <pthread.h>, simply run the following command
 
 > mkdir build
+>
 > cd build
+>
 > ../configure
+>
 > make
+>
 > make install
 
 To build on other systems, navigate to the src/aes directory, and build using
