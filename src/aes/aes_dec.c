@@ -347,7 +347,7 @@ int main(int argc, char** argv)
         if(optS)
         {
             //Throwing away the included password hash
-            fread(salted_pass_hash,1,16,inputfile);
+            fread(salted_pass_hash,1,32,inputfile);
         }
         //Do password check
         else
