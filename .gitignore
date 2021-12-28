@@ -1,0 +1,6 @@
+test
+build
+src/aes/aes_enc
+src/aes/aes_dec
+src/aes/aes_enc.exe
+src/aes/aes_dec.exe
