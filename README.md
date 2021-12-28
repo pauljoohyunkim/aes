@@ -36,10 +36,13 @@ To build on a Unix environment that supports <pthread.h>, simply run the followi
 To build on other systems, navigate to the src/aes directory, and build using
 
 > gcc aes_enc.c -o aes_enc -pthread
+> gcc aes_dec.c -o aes_dec -pthread
 
 If for some reason the compilation fails due to the -pthread option, try again with -lpthread flag instead.
 
-## aes_enc Option (-h)
+## Option (-h)
+
+### aes_enc
 Usage: aes_enc -t (AES type) -i (input file) -k (key file) [other options]
 
 
@@ -56,7 +59,7 @@ Usage: aes_enc -t (AES type) -i (input file) -k (key file) [other options]
 >       -u <positive integer>: status update frequency. (default: 5)     [ORIGINALLY UNIX-BASED ENVIORNMENT EXCLUSIVE]
 >	    -q: disable status update during encryption.			 [ORIGINALLY UNIX-BASED ENVIRONMENT EXCLUSIVE]
 >       -s: disable password check when decrypting.
->       -f: disable file integrity check after decrypting.
+>       -f: disable file integrity check after decryption.
 
 Note that you can use any file as a key file, whether it is a text file, image file, etc, as long as you keep it secret.
 
@@ -64,3 +67,22 @@ Example)
 > aes_enc -t1 -i secret_file.txt -k super_secret_key
 
 Encrypts using AES128-CTR the file "secret_file.txt" using "super_secret_key" file as key file.
+
+### aes_dec
+Usage: aes_dec -i (encrypted file) -k (key file) [other options]
+
+> Required options:
+>
+>       -i <encrypted file>: name of the file you wish to encrypt
+>       -k <key file>: file containing your key.
+>
+> Common options:
+>
+>       -o <output file>: specify the output file. (default: <encrypted file>.decrypted)
+>       (Warning: Do not set the output file to be equal to the encrypted file.)
+>       -u <positive integer>: status update frequency. (default: 5)     [ORIGINALLY UNIX-BASED ENVIORNMENT EXCLUSIVE]
+>	    -q: disable status update during encryption.			 [ORIGINALLY UNIX-BASED ENVIRONMENT EXCLUSIVE]
+>
+> Override options:
+>       -s: disable password check (even if password hash is included.)
+>       -f: disable file integrity check after decryption (even if file integrity hash is included.)

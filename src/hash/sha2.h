@@ -1,4 +1,3 @@
-//Requires string.h
 
 //Function declaration
 uint32_t rotr(uint32_t x, int n);

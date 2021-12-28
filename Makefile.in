@@ -86,7 +86,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = aes_enc$(EXEEXT)
+bin_PROGRAMS = aes_enc$(EXEEXT) aes_dec$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -102,6 +102,11 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
+am_aes_dec_OBJECTS = src/aes/aes_dec-aes_dec.$(OBJEXT)
+aes_dec_OBJECTS = $(am_aes_dec_OBJECTS)
+aes_dec_LDADD = $(LDADD)
+aes_dec_LINK = $(CCLD) $(aes_dec_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_aes_enc_OBJECTS = src/aes/aes_enc-aes_enc.$(OBJEXT)
 aes_enc_OBJECTS = $(am_aes_enc_OBJECTS)
 aes_enc_LDADD = $(LDADD)
@@ -122,7 +127,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
+am__depfiles_remade = src/aes/$(DEPDIR)/aes_dec-aes_dec.Po \
+	src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -140,8 +146,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(aes_enc_SOURCES)
-DIST_SOURCES = $(aes_enc_SOURCES)
+SOURCES = $(aes_dec_SOURCES) $(aes_enc_SOURCES)
+DIST_SOURCES = $(aes_dec_SOURCES) $(aes_enc_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -283,6 +289,13 @@ aes_enc_SOURCES = src/aes/aes_enc.c \
                   src/hash/sha2.h
 
 aes_enc_CFLAGS = -pthread
+aes_dec_SOURCES = src/aes/aes_dec.c \
+                  src/aes/aes_common.h \
+                  src/aes/ctr_common.h \
+                  src/aes/file_common.h \
+                  src/hash/sha2.h
+
+aes_dec_CFLAGS = -pthread
 all: all-am
 
 .SUFFIXES:
@@ -368,6 +381,12 @@ src/aes/$(am__dirstamp):
 src/aes/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/aes/$(DEPDIR)
 	@: > src/aes/$(DEPDIR)/$(am__dirstamp)
+src/aes/aes_dec-aes_dec.$(OBJEXT): src/aes/$(am__dirstamp) \
+	src/aes/$(DEPDIR)/$(am__dirstamp)
+
+aes_dec$(EXEEXT): $(aes_dec_OBJECTS) $(aes_dec_DEPENDENCIES) $(EXTRA_aes_dec_DEPENDENCIES) 
+	@rm -f aes_dec$(EXEEXT)
+	$(AM_V_CCLD)$(aes_dec_LINK) $(aes_dec_OBJECTS) $(aes_dec_LDADD) $(LIBS)
 src/aes/aes_enc-aes_enc.$(OBJEXT): src/aes/$(am__dirstamp) \
 	src/aes/$(DEPDIR)/$(am__dirstamp)
 
@@ -382,6 +401,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@src/aes/$(DEPDIR)/aes_dec-aes_dec.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/aes/$(DEPDIR)/aes_enc-aes_enc.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -405,6 +425,20 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+src/aes/aes_dec-aes_dec.o: src/aes/aes_dec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aes_dec_CFLAGS) $(CFLAGS) -MT src/aes/aes_dec-aes_dec.o -MD -MP -MF src/aes/$(DEPDIR)/aes_dec-aes_dec.Tpo -c -o src/aes/aes_dec-aes_dec.o `test -f 'src/aes/aes_dec.c' || echo '$(srcdir)/'`src/aes/aes_dec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/aes/$(DEPDIR)/aes_dec-aes_dec.Tpo src/aes/$(DEPDIR)/aes_dec-aes_dec.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/aes/aes_dec.c' object='src/aes/aes_dec-aes_dec.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aes_dec_CFLAGS) $(CFLAGS) -c -o src/aes/aes_dec-aes_dec.o `test -f 'src/aes/aes_dec.c' || echo '$(srcdir)/'`src/aes/aes_dec.c
+
+src/aes/aes_dec-aes_dec.obj: src/aes/aes_dec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aes_dec_CFLAGS) $(CFLAGS) -MT src/aes/aes_dec-aes_dec.obj -MD -MP -MF src/aes/$(DEPDIR)/aes_dec-aes_dec.Tpo -c -o src/aes/aes_dec-aes_dec.obj `if test -f 'src/aes/aes_dec.c'; then $(CYGPATH_W) 'src/aes/aes_dec.c'; else $(CYGPATH_W) '$(srcdir)/src/aes/aes_dec.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/aes/$(DEPDIR)/aes_dec-aes_dec.Tpo src/aes/$(DEPDIR)/aes_dec-aes_dec.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/aes/aes_dec.c' object='src/aes/aes_dec-aes_dec.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aes_dec_CFLAGS) $(CFLAGS) -c -o src/aes/aes_dec-aes_dec.obj `if test -f 'src/aes/aes_dec.c'; then $(CYGPATH_W) 'src/aes/aes_dec.c'; else $(CYGPATH_W) '$(srcdir)/src/aes/aes_dec.c'; fi`
 
 src/aes/aes_enc-aes_enc.o: src/aes/aes_enc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aes_enc_CFLAGS) $(CFLAGS) -MT src/aes/aes_enc-aes_enc.o -MD -MP -MF src/aes/$(DEPDIR)/aes_enc-aes_enc.Tpo -c -o src/aes/aes_enc-aes_enc.o `test -f 'src/aes/aes_enc.c' || echo '$(srcdir)/'`src/aes/aes_enc.c
@@ -690,7 +724,8 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-		-rm -f src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
+		-rm -f src/aes/$(DEPDIR)/aes_dec-aes_dec.Po
+	-rm -f src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -738,7 +773,8 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-		-rm -f src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
+		-rm -f src/aes/$(DEPDIR)/aes_dec-aes_dec.Po
+	-rm -f src/aes/$(DEPDIR)/aes_enc-aes_enc.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -41,21 +41,28 @@ char* inputfilename;
 char* outputfilename;
 uint8_t aesFileHeader[3] = {0};     //First byte represents AES type. Second byte represents password-check skip flag.
                                     //Third byte represents file-integrity-check skip flag.
+uint8_t aesFileHeaderRaw[3] = {0};  //The header read straight from the file.
 unsigned long long int inputfilesize = 0;       //Size of the input file in bytes
 
 
-char default_extension[] = ".aes";
+char default_extension[] = ".decrypted";
 
 //File descriptors
 FILE* inputfile;
 FILE* keyfile;
 FILE* outputfile;
+FILE* plainfile;
 
 uint8_t salted_pass_hash[32] = {0};
+uint8_t computed_pass_hash[32] = {0};
 uint8_t integrity_hash[32] = {0};
+uint8_t computed_integrity_hash[32] = {0};
 
 //Option Flags
 bool optT = false, optI = false, optK = false, optO = false, optS = false, optF = false, optU = false, optQ = false;
+
+//
+bool integritycheck = false;
 
 //Job done flag
 bool done = false;
@@ -84,22 +91,24 @@ void help()
 {
     char helptext[] = 
         "\n"
-        "Usage: aes_enc -t <AES type> -i <input file> -k <key file> [other options]\n"
+        "Usage: aes_dec -i <encrypted file> -k <key file> [other options]\n"
         "\n"
         " Required options:\n"
         "\n"
-        "       -t <AES type>: AES bit mode (1:128bit, 2:192bit, 3:256bit)\n"
-        "       -i <input file>: name of the file you wish to encrypt\n"
+        "       -i <encrypted file>: name of the file you wish to decrypt\n"
         "       -k <key file>: file containing your key.\n"
         "\n"
         " Common options:\n"
         "\n"
-        "       -o <output file>: specify the output file. (default: <input file>.aes)\n"
+        "       -o <output file>: specify the output file. (default: <input file>.decrypted)\n"
         "       (Warning: Do not set the output file to be equal to the input file.)\n"
         #if __has_include(<pthread.h>)
         "       -u <positive integer>: status update frequency. (default: 5)\n"
         "       -q: disable status update during encryption.\n"
         #endif
+        "\n"
+        " Override options:\n"
+        "       -t <AES type>: overrides AES bit mode detection to the specified mode (1:128bit, 2:192bit, 3:256bit)\n"
         "       -s: disable password check when decrypting.\n"
         "       -f: disable file integrity check after decrypting.\n";
     printf("%s",helptext);
@@ -114,9 +123,8 @@ int main(int argc, char** argv)
     {
         rcon[i][0] = rc[i];
     }
-    //IV generation
-    srand(time(NULL));
-    iv_gen();
+
+    //IV generation is not needed anymore.
 
     // Files
     
@@ -139,21 +147,21 @@ int main(int argc, char** argv)
             switch (optarg[0])
             {
                 case '1':
-                    printf("AES Type: AES-128\n");
+                    printf("AES Type (Forced): AES-128\n");
                     *aesFileHeader = 1;
                     nRoundKeys = 11;
                     nWords = 4;
                     nRounds = 10;
                     break;
                 case '2':
-                    printf("AES Type: AES-192\n");
+                    printf("AES Type (Forced): AES-192\n");
                     *aesFileHeader = 2;
                     nRoundKeys = 13;
                     nWords = 6;
                     nRounds = 12;
                     break;
                 case '3':
-                    printf("AES Type: AES-256\n");
+                    printf("AES Type (Forced): AES-256\n");
                     *aesFileHeader = 3;
                     nRoundKeys = 15;
                     nWords = 8;
@@ -171,18 +179,18 @@ int main(int argc, char** argv)
             inputfile = fopen(optarg,"rb");
             if(inputfile == NULL)
             {
-                printf("[ERROR] Input file could not be opened.\n");
+                printf("[ERROR] Encrypted file could not be opened.\n");
                 fclose(inputfile);
                 return 1;
             }
             else
             {
-                printf("Input File: %s\n", optarg);
-                //Copying input file name to the memory.
+                printf("Encrypted File: %s\n", optarg);
+                //Copying encrypted file name to the memory.
                 inputfilename = (char*) malloc((strlen(optarg) + 10) * sizeof(char));
                 strcpy(inputfilename,optarg);
                 inputfilesize = filesize(inputfile);
-                printf("Input file \"%s\": %llu bytes\n", inputfilename, inputfilesize);
+                printf("Encrypted file \"%s\": %llu bytes\n", inputfilename, inputfilesize);
                 break;
             }
             break;
@@ -201,7 +209,6 @@ int main(int argc, char** argv)
                 printf("Key File: %s\n", optarg);
                 read_bytes = fread(key, 1, 32, keyfile);
                 rewind(keyfile);
-                //Key file will be closed after salting and hashing.
                 break;
             }
             break;
@@ -259,24 +266,133 @@ int main(int argc, char** argv)
             return 1;
         }
     }
-    //Required options ("t", "i", "k") check
-    if(!((optT && optI) && optK))
+    //Required options ("i", "k") check
+    if(!(optK && optI))
     {
-        printf("At least one of the required options (\"t\", \"i\", \"k\") not provided.\n");
+        printf("At least one of the required options (\"i\", \"k\") not provided.\n");
         return 1;
     }
     //Check if output file is set or not. If not, default filename.
     if(!optO)
     {
-        outputfilename = (char*) malloc((strlen(inputfilename) + 10) * sizeof(char));
+        outputfilename = (char*) malloc((strlen(inputfilename) + 15) * sizeof(char));
         strcpy(outputfilename,inputfilename);
         strcat(outputfilename,default_extension);
         outputfile = fopen(outputfilename,"wb");
     }
+    //Reading header
+    if(fread(aesFileHeaderRaw,1,3,inputfile) != 3)
+    {
+        printf("[ERROR] The file header cannot be read. Terminating.\n");
+        return 1;
+    }
+    //Reading IV
+    if(fread(iv,1,16,inputfile) != 16)
+    {
+        printf("[ERROR] The IV cannot be read. Terminating. \n");
+        return 1;
+    }
+    for(int i = 0; i < 16; i++)
+    {
+        ctr_vec[i] = iv[i];
+    }
+
+    /* Header Processing
+    Need to check for each option from the raw header.
+    */
+
+
+    //Type detection (A)
+    if(!optT)
+    {
+        if(aesFileHeaderRaw[0] == 1)
+        {
+            aesFileHeader[0] = 1;
+            printf("AES Type Detection: AES-128\n");
+        }
+        else if(aesFileHeaderRaw[0] == 2)
+        {
+            aesFileHeader[0] = 2;
+            printf("AES Type Detection: AES-192\n");
+        }
+        else if(aesFileHeaderRaw[0] == 3)
+        {
+            aesFileHeader[0] = 3;
+            printf("AES Type Detection: AES-256\n");
+        }
+        else
+        {
+            printf("[ERROR] AES type detection failed.\n");
+            return 1;
+        }
+    }
+
+    //Password hash (P)
+    //Password hash included.
+    if(aesFileHeaderRaw[1] == 0)
+    {
+        //Skip password check
+        if(optS)
+        {
+            //Throwing away the included password hash
+            fread(salted_pass_hash,1,16,inputfile);
+        }
+        //Do password check
+        else
+        {
+            aesFileHeader[1] = 0;
+            sha256(ctr_vec,16,keyfile,keylen,computed_pass_hash);
+            fread(salted_pass_hash,1,32,inputfile);
+            for(int i = 0; i < 32; i++)
+            {
+                if(salted_pass_hash[i] != computed_pass_hash[i])
+                {
+                    printf("[ERROR] Wrong password file. Terminating.\n");
+                    return 1;
+                }
+            }
+            
+            printf("[INFO] Password accepted.");
+            
+        }
+    }
+    //Password not included
+    else
+    {
+        printf("[INFO] Password hash is not included during encryption, so password check is disabled.\n");
+    }
+
+    //read_bytes = fread(key, 1, 32, keyfile);
+    //Key file will be closed after salting and hashing.
+
+    //File integrity check
+    //File integrity header included
+    if(aesFileHeaderRaw[2] == 0)
+    {
+        //Skip file integrity check
+        if(optF)
+        {
+            //Throwing away the included integrity check hash
+            fread(integrity_hash,1,32,inputfile);
+        }
+        else
+        {
+            aesFileHeaderRaw[2] = 0;
+            fread(integrity_hash,1,32,inputfile);
+            integritycheck = true;
+            printf("[INFO] File integrity check scheduled.\n");
+        }
+    }
+    //File integrity hash not included
+    else
+    {
+        printf("[INFO] File integrity hash is not included during encryption, so file integrity check is disabled.\n");
+    }
+
     //Check key length
     if(read_bytes > keylen)
     {
-        printf("[WARNING] Since the selected AES type requires %d bytes as the key, the only the first %d bytes of the key file is read.\n", keylen, keylen);
+        printf("[WARNING] The AES type requires %d bytes as the key, the only the first %d bytes of the key file is read.\n", keylen, keylen);
     }
     else if (read_bytes == 0)
     {
@@ -288,31 +404,6 @@ int main(int argc, char** argv)
         printf("[INFO] Since the selected AES type requires %d bytes as the key, and the provided key file supplied %d bytes, %d bytes are padded with zeros.\n", keylen, read_bytes, keylen - read_bytes);
     }
 
-    //AES type header
-    fwrite(aesFileHeader, 1, 3, outputfile);
-
-    //Write IV
-    fwrite(ctr_vec, 1, 16, outputfile);
-
-
-    //If -s option is not used, add salt.
-    if(!optS)
-    {
-        //Salting and hashing
-        sha256(ctr_vec,16,keyfile,keylen,salted_pass_hash);
-        fwrite(salted_pass_hash,1,32,outputfile);
-        printf("[INFO] Keyfile hash (with IV as salt) added to the output.\n");
-    }
-
-    //If -f option is not used, add file-integrity checking hash, salted with password
-    if(!optF)
-    {
-        //Salting and hashing
-        printf("[INFO] Hashing input file...\n");
-        sha256(key,keylen,inputfile,inputfilesize,integrity_hash);
-        fwrite(integrity_hash,1,32,outputfile);
-        printf("[INFO] Input file hashed.\n");
-    }
 
     //Closing key file.
     fclose(keyfile);
@@ -344,10 +435,32 @@ int main(int argc, char** argv)
     fclose(inputfile);
     fclose(outputfile);
 
-    printf("\n[INFO] Encryption complete! Saved as: %s\n", outputfilename);
+    printf("\n[INFO] Decryption complete! Saved as: %s\n", outputfilename);
+
+    //File integrity check
+    if(integritycheck)
+    {
+        printf("[INFO] Integrity check starting...\n");
+        plainfile = fopen(outputfilename,"rb");
+        unsigned long long int plainfilesize = filesize(plainfile);
+        sha256(key,keylen,plainfile,plainfilesize,computed_integrity_hash);
+        for(int i = 0; i < 32; i++)
+        {
+            if(computed_integrity_hash[i] != integrity_hash[i])
+            {
+                printf("[ERROR] Mismatching integrity hash.\n");
+                return 1;
+            }
+        }
+        
+        printf("[INFO] Integrity hash verified.\n");
+        
+        fclose(plainfile);
+    }
 
     free(inputfilename);
     free(outputfilename);
+
     return 0;
 }
 
