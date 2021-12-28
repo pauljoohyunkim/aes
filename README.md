@@ -38,6 +38,7 @@ You can check if the program functions as expected by running "make check". Ther
 To build on other systems, navigate to the src/aes directory, and build using
 
 > gcc aes_enc.c -o aes_enc -pthread
+>
 > gcc aes_dec.c -o aes_dec -pthread
 
 If for some reason the compilation fails due to the -pthread option, try again with -lpthread flag instead.
