@@ -1,10 +1,6 @@
 # aes
 Based on the old aes128 project of mine (https://github.com/pauljoohyunkim/aes128). This will be written more cleanly, and support more formats of AES.
 
-# This repository is currently under construction.
-Encryptor is almost ready. Decryptor is still under construction.
-Should you wish to try it out, compile it by "gcc aes_enc.c -o aes_enc -lpthread"
-
 ## Encrypted File Format
 
 Suppose "inputfile" contains some bytes "$$$$$$$$$$$$$$$$" and its cipher text is some "????????????????". The generated encrypted file will follow the following format.
