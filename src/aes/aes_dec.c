@@ -309,16 +309,28 @@ int main(int argc, char** argv)
         {
             aesFileHeader[0] = 1;
             printf("AES Type Detection: AES-128\n");
+            nRoundKeys = 11;
+            nWords = 4;
+            nRounds = 10;
+            keylen = 4 * nWords;
         }
         else if(aesFileHeaderRaw[0] == 2)
         {
             aesFileHeader[0] = 2;
             printf("AES Type Detection: AES-192\n");
+            nRoundKeys = 13;
+            nWords = 6;
+            nRounds = 12;
+            keylen = 4 * nWords;
         }
         else if(aesFileHeaderRaw[0] == 3)
         {
             aesFileHeader[0] = 3;
             printf("AES Type Detection: AES-256\n");
+            nRoundKeys = 15;
+            nWords = 8;
+            nRounds = 14;
+            keylen = 4 * nWords;
         }
         else
         {
@@ -352,7 +364,7 @@ int main(int argc, char** argv)
                 }
             }
             
-            printf("[INFO] Password accepted.");
+            printf("[INFO] Password accepted.\n");
             
         }
     }
