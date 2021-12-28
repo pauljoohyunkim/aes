@@ -31,7 +31,13 @@ To build on a Unix environment that supports <pthread.h>, simply run the followi
 >
 > make
 >
+> [optional] make check
+>
 > make install
+
+Should the "make" line causes an error, navigate to the root directory of the project and run "automake --add-missing", and try it again.
+
+You can check if the program functions as expected by running "make check". There are 48 tests in total, and each test should take between 2 seconds to 5 seconds (depending on how fast your machine is.)
 
 To build on other systems, navigate to the src/aes directory, and build using
 
