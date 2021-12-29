@@ -17,6 +17,7 @@ where
 * Salting is done by XOR-ing the salt with the file in the first "salt-len" bytes.
 
 ## Build Instruction
+# Unix
 To build on a Unix environment that supports <pthread.h>, simply run the following command
 
 > mkdir build
@@ -42,6 +43,13 @@ To build on other systems, navigate to the src/aes directory, and build using
 > gcc aes_dec.c -o aes_dec -pthread
 
 If for some reason the compilation fails due to the -pthread option, try again with -lpthread flag instead.
+
+# Windows
+If you are building on a platform that does not natively support pthread.h, such as Windows, you can build manually without the -pthread flag.
+
+> gcc aes_enc.c -o aes_enc
+>
+> gcc aes_dec.c -o aes_dec
 
 ## Option (-h)
 

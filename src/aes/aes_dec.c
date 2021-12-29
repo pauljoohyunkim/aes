@@ -228,11 +228,13 @@ int main(int argc, char** argv)
         case 's':
             optS = true;
             *(aesFileHeader + 1) = 1;
+            printf("[INFO] Password check will be skipped.\n");
             break;
         //File-integrity check skip. If you want to save a few seconds...
         case 'f':
             optF = true;
             *(aesFileHeader + 2) = 1;
+            printf("[INFO] File integrity check will be skipped.\n");
             break;
         
         #if __has_include(<pthread.h>)
@@ -419,6 +421,8 @@ int main(int argc, char** argv)
 
     //Closing key file.
     fclose(keyfile);
+
+    printf("\n\n[INFO] Encryption started.\n\n");
 
     //Threads for status update.
     #if __has_include(<pthread.h>)
