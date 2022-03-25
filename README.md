@@ -1,5 +1,5 @@
 # aes
-Based on the old aes128 project of mine (https://github.com/pauljoohyunkim/aes128). This will be written more cleanly, and support more formats of AES.
+Based on the old aes128 project of mine (https://github.com/pauljoohyunkim/aes128). This project will also be obsolete, and will be absorbed into a larger project, in a more cleanly-structured way.
 
 ## Encrypted File Format
 
